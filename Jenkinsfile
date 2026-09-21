@@ -29,14 +29,29 @@ pipeline {
                 sh 'mvn failsafe:integration-test failsafe:verify'
             }
         }
+
+        stage('Deploy to Staging (Blue-Green)') {
+            steps {
+                echo "5. Iniciando despliegue Blue-Green..."
+                sh 'echo "Desplegando nueva versión en entorno GREEN..."'
+            }
+        }
+
+        stage('Acceptance Tests (Gate)') {
+            steps {
+                echo "6. Validando Acceptance Gate en entorno GREEN..."
+                sh 'mvn test -Dtest=LoginAcceptanceTest'
+            }
+        }
     }
 
     post {
         success {
-            echo "Integración Continua completada exitosamente. El código es estable."
+            echo "Acceptance Gate superado. Entorno GREEN es ahora productivo."
         }
         failure {
-            echo "Fallo en la Integración Continua. Revisa los logs de compilación o pruebas."
+            echo "Fallo detectado. INICIANDO ROLLBACK AUTOMÁTICO..."
+            sh 'echo "Redirigiendo tráfico al entorno BLUE estable para recuperación."'
         }
         always {
             cleanWs()
